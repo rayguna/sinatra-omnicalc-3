@@ -52,7 +52,7 @@ Activities:
 </html>
 ```
 
-Every time you create a form, you will have to create two routes and not just one. The first route defines the form and the second route defines the page that displays the output of the form.  
+○ Every time you create a form, you will have to create two routes and not just one. The first route defines the form and the second route defines the page that displays the output of the form.  
 
 1. Add a route to app.rb:
 
@@ -86,7 +86,7 @@ end
 
 To probe what variables are available to be passed to the results page, you may add <%=params%> within umbrella_results.html. To pass the parameter, you must fetch the variable and assign it to a variable that is preceeded with @, e.g., @user_location = params.fetch("user_location").
 
-• Let's incorporate google map API. To do so, you need to install http package by adding the line `gem "http"` to Gemfile and running the command `bundle install`. You also need to add the command `require "http"` within app.rb.
+○ Let's incorporate google map API. To do so, you need to install http package by adding the line `gem "http"` to Gemfile and running the command `bundle install`. You also need to add the command `require "http"` within app.rb.
 
 • To get geo data from google API, modify the code within the process_umbrella route as shown below. Note that `@user location` and `GMAPS_KEY` are passed to the url by concatenating to the url string using the '+' operator. Also note how the api information is being read as JSON, which is of type dictionary. The dictionary data type is then parsed using the method .dig() hierarchically as and stored as `@loc_hash: @loc_hash = @parsed_response.dig("results", 0, "geometry", "location")`. 
 
@@ -109,7 +109,9 @@ get("/process_umbrella") do
 end
 ```
 
-To implement cookies, within app.rb add the command `require "sinatra/cookies"`. Within the Gemfile, make sure to have `gem "sinatra-contrib"` and reinstall with `bundle install`. Add the following route into app.rb to test:
+○ To implement cookies, within app.rb, do the following. 
+• Add the command `require "sinatra/cookies"`. Within the Gemfile, make sure to have `gem "sinatra-contrib"` and reinstall with `bundle install`. 
+• Add the following route into app.rb to test:
 
 ```
 get ("/zebra") do
@@ -118,7 +120,7 @@ get ("/zebra") do
 end
 ```
 
-Navigate into the route .../zebra on a chrome browser. Right click and choose Inspect. Click on Application tab and review the cookies. You should now see the cookies hash corresponding to "color" and "sport" keys.
+• Navigate into the route .../zebra on a chrome browser. Right click and choose Inspect. Click on Application tab and review the cookies. You should now see the cookies hash corresponding to "color" and "sport" keys.
 
 • You may store the parameters into cookies has, by modifying the route block within the app.rb file as follows:
 
@@ -146,7 +148,7 @@ get("/process_umbrella") do
 end
 ```
 
-You can display the cookies hash within the umbrella_results.erb using the command `<%=cookies%>`, as follows:
+• You can display the cookies hash within the umbrella_results.erb using the command `<%=cookies%>`, as follows:
 
 ```
 <h1>Should I take an umbrella?</h1>
@@ -174,7 +176,7 @@ You can display the cookies hash within the umbrella_results.erb using the comma
 <a href="/umbrella">Go back</a>
 ```
 
-You can also retrieve the cookies and display it within the umbrella_form as follows. 
+• You can also retrieve the cookies and display it within the umbrella_form as follows. 
 
 ```
 <h1>Should I take an umbrella?</h1>
@@ -199,3 +201,19 @@ You can also retrieve the cookies and display it within the umbrella_form as fol
   <li><%=cookies["last_lng"]%></li>
 </ul>
 ```
+○ Incorporating the weather API:
+• Link to weather API. If at any point, you get an error message saying key not found do update the API key. It is likely that the key has become obsolete. Alternatively, check to make sure that the repository is linked to the API key you are trying to use.
+• The weather api url requires both the API key and the latitude and longitude information to work. Make sure to specify both of those!
+• I found that the algorithm for determining whether to bring an umbrella based on precipitation threshold adopted from the umbrella project is inconsistent with the message indicated in `@next_hour_summary`. Upon inspection, I found that the `precip_prob_threshold` is set to -1. To be consistent, in this case, the umbrella recommendation is determined from the @next_hour_summary, as follows:
+
+```
+  if @next_hour_summary.downcase == 'rain'
+    return "You might want to take an umbrella!"
+  else
+    return "You probably won't need an umbrella."
+  end  
+```
+○ To hide the key-value query in the url, you would want to use "post" rather than "get" method. Sometimes, however, the get method is preferred over get method for transparency and ease of changing the query parameters. To implement a POST method to retrieve API data, you need to change the get method in 3 places:
+• Change the `get("/my_route")` do to `post("/my_route")`
+• Within the post block, change `HTTP.get(...).to_s` to `HTTP.post(...).to_s`.
+• Within the submission form page, change `<form action="/process_umbrella" method="get">` to `<form action="/process_umbrella" method="post">`. If the method parameter is not set, the default is set to "get".

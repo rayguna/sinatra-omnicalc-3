@@ -1,6 +1,6 @@
 <h1>Should I take an umbrella?</h1>
 
-<form action="/process_umbrella">
+<form action="/process_umbrella" method="post">
 <div>
   <label for="location_field">Where are you located?</label>
 </div>
@@ -15,7 +15,7 @@
 <p> You last search for: </p>
 
 <ul>
-  <li><%=cookies["last_location"]%></li>
-  <li><%=cookies["last_lat"]%></li>
-  <li><%=cookies["last_lng"]%></li>
+  <li>Last location: <%=cookies["last_location"]%></li>
+  <li>Last latitude: <%=cookies["last_lat"]%></li>
+  <li>Last longitude: <%=cookies["last_lng"]%></li>
 </ul>

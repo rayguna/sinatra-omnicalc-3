@@ -11,13 +11,15 @@
   <dd><%=@longitude%></dd>
 
   <dt>Current temperature</dt>
-  <dd>34.77</dd>
+  <dd><%=@current["temperature"]%> °F</dd>
 
   <dt>Current summary</dt>
-  <dd>Cloudy</dd>
+  <dd><%=@next_hour_summary%></dd>
 
   <dt>Umbrella?</dt>
-  <dd>You probably won&#39;t need an umbrella.</dd>
+  <dd><%=@message%></dd>
+
+  <%=@ppt_prob%>
 </dl>
 
 <a href="/umbrella">Go back</a>

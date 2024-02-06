@@ -4,22 +4,21 @@ require "http"
 require "sinatra/cookies"
 
 get("/") do
-  "
-  <h1>Welcome to your Sinatra App!</h1>
-  <p>Define some routes in app.rb</p>
-  "
+  erb(:welcome)
 end
 
 get("/umbrella") do
   erb(:umbrella_form)
 end
 
-get("/process_umbrella") do
+post("/process_umbrella") do
+
+  #Get location information
   @user_location = params.fetch("user_location")
 
   gmaps_url = "https://maps.googleapis.com/maps/api/geocode/json?address=Merchandise%20Mart%20" + @user_location + "&key=" + ENV.fetch("GMAPS_KEY")
 
-  @raw_response = HTTP.get(gmaps_url).to_s
+  @raw_response = HTTP.post(gmaps_url).to_s
 
   @parsed_response = JSON.parse(@raw_response)
 
@@ -33,8 +32,81 @@ get("/process_umbrella") do
   cookies["last_lat"] = @latitude
   cookies["last_lng"] = @longitude
 
+  #get weather information
+  #fetch weather API key
+  pirate_weather_api_key = ENV.fetch("PIRATE_WEATHER_KEY")
+
+  pirate_weather_url = "https://api.pirateweather.net/forecast/" + pirate_weather_api_key + "/#{@latitude},#{@longitude}"
+
+  #pp pirate_weather_url
+  weather_url = HTTP.get(pirate_weather_url)
+  ##pp weather_url
+
+  weather_json = JSON.parse(weather_url.to_s)
+
+  @current = weather_json["currently"]
+
+  @message = do_I_need_an_umbrella(weather_json)
+
   erb(:umbrella_results)
 end
+
+def do_I_need_an_umbrella(weather_json)
+  """Determine if an umbrella is needed
+
+     Input:
+       weather_json
+    Output:
+       a string stating if an umbrella is needed
+  """
+
+  # Some locations around the world do not come with minutely data.
+  minutely_hash = weather_json.fetch("minutely", false)
+
+  if minutely_hash
+    #get weather information in the next hour
+    @next_hour_summary = minutely_hash["summary"]
+  end
+
+  hourly_hash = weather_json["hourly"]
+
+  hourly_data_array = hourly_hash["data"]
+
+  next_twelve_hours = hourly_data_array[1..12]
+
+  precip_prob_threshold = -1
+
+  any_precipitation = false
+
+  lst_precipitation = []
+
+  next_twelve_hours.each do |hour_hash|
+    precip_prob = hour_hash.fetch("precipProbability")
+
+    if precip_prob > precip_prob_threshold
+      any_precipitation = true
+
+      precip_time = Time.at(hour_hash.fetch("time"))
+
+      seconds_from_now = precip_time - Time.now
+
+      hours_from_now = seconds_from_now / 60 / 60
+
+      #append data to array
+      lst_precipitation.append([hours_from_now.round, precip_prob * 100.round])
+
+      #puts "In #{hours_from_now.round} hours, there is a #{(precip_prob * 100).round}% chance of precipitation."
+    end
+  end
+
+  if @next_hour_summary.downcase == 'rain'
+    return "You might want to take an umbrella!"
+  else
+    return "You probably won't need an umbrella."
+  end  
+
+end
+
 
 get("/message") do
   erb(:message_form)
