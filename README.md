@@ -108,3 +108,94 @@ get("/process_umbrella") do
   erb(:umbrella_results)
 end
 ```
+
+To implement cookies, within app.rb add the command `require "sinatra/cookies"`. Within the Gemfile, make sure to have `gem "sinatra-contrib"` and reinstall with `bundle install`. Add the following route into app.rb to test:
+
+```
+get ("/zebra") do
+  cookies["color"]="purple"
+  cookies["sport"]="tennis"
+end
+```
+
+Navigate into the route .../zebra on a chrome browser. Right click and choose Inspect. Click on Application tab and review the cookies. You should now see the cookies hash corresponding to "color" and "sport" keys.
+
+• You may store the parameters into cookies has, by modifying the route block within the app.rb file as follows:
+
+```
+get("/process_umbrella") do
+  @user_location = params.fetch("user_location")
+
+  gmaps_url = "https://maps.googleapis.com/maps/api/geocode/json?address=Merchandise%20Mart%20" + @user_location + "&key=" + ENV.fetch("GMAPS_KEY")
+
+  @raw_response = HTTP.get(gmaps_url).to_s
+
+  @parsed_response = JSON.parse(@raw_response)
+
+  @loc_hash = @parsed_response.dig("results", 0, "geometry", "location")
+
+  @latitude = @loc_hash.fetch("lat")
+  @longitude = @loc_hash.fetch("lng")  
+  
+  #store information into cookies
+  cookies["last_location"] = @user_location
+  cookies["last_lat"] = @latitude
+  cookies["last_lng"] = @longitude
+
+  erb(:umbrella_results)
+end
+```
+
+You can display the cookies hash within the umbrella_results.erb using the command `<%=cookies%>`, as follows:
+
+```
+<h1>Should I take an umbrella?</h1>
+<%=cookies%>
+<dl>
+  <dt>User location</dt>
+  <dd><%=@user_location%></dd>
+
+  <dt>Latitude</dt>
+  <dd><%=@latitude%></dd>
+
+  <dt>Longitude</dt>
+  <dd><%=@longitude%></dd>
+
+  <dt>Current temperature</dt>
+  <dd>34.77</dd>
+
+  <dt>Current summary</dt>
+  <dd>Cloudy</dd>
+
+  <dt>Umbrella?</dt>
+  <dd>You probably won&#39;t need an umbrella.</dd>
+</dl>
+
+<a href="/umbrella">Go back</a>
+```
+
+You can also retrieve the cookies and display it within the umbrella_form as follows. 
+
+```
+<h1>Should I take an umbrella?</h1>
+
+<form action="/process_umbrella">
+<div>
+  <label for="location_field">Where are you located?</label>
+</div>
+
+<div>
+  <input id="location_field" type="text" name="user_location">
+</div>
+
+  <button>Submit</button>
+</form>
+
+<p> You last search for: </p>
+
+<ul>
+  <li><%=cookies["last_location"]%></li>
+  <li><%=cookies["last_lat"]%></li>
+  <li><%=cookies["last_lng"]%></li>
+</ul>
+```

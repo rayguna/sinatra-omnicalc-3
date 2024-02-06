@@ -1,6 +1,7 @@
 require "sinatra"
 require "sinatra/reloader"
 require "http"
+require "sinatra/cookies"
 
 get("/") do
   "
@@ -25,7 +26,12 @@ get("/process_umbrella") do
   @loc_hash = @parsed_response.dig("results", 0, "geometry", "location")
 
   @latitude = @loc_hash.fetch("lat")
-  @longitude = @loc_hash.fetch("lng")   
+  @longitude = @loc_hash.fetch("lng")  
+  
+  #store information into cookies
+  cookies["last_location"] = @user_location
+  cookies["last_lat"] = @latitude
+  cookies["last_lng"] = @longitude
 
   erb(:umbrella_results)
 end
@@ -36,4 +42,11 @@ end
 
 get("/chat") do
   erb(:chat_form)
+end
+
+get ("/zebra") do
+  #test cookies
+  
+  cookies["color"]="purple"
+  cookies["sport"]="tennis"
 end
