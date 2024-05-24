@@ -217,3 +217,36 @@ end
 • Change the `get("/my_route")` do to `post("/my_route")`
 • Within the post block, change `HTTP.get(...).to_s` to `HTTP.post(...).to_s`.
 • Within the submission form page, change `<form action="/process_umbrella" method="get">` to `<form action="/process_umbrella" method="post">`. If the method parameter is not set, the default is set to "get".
+
+3. Work on message form.
+
+○ Create a file called view/message_form.erb to process user message. The contents is as follows:
+```
+<h1>Your query:</h1>
+<!--<%=cookies%>-->
+
+
+<p>Your message:</p>
+<p><%=@the_message%></p>
+
+<p>GPT-4's response:</p>
+<p>...</p>
+
+<br>
+<br>
+<a href="/message">Go back</a>
+```
+
+○ Link message_form.erb to message_form.erb within app.rb as follows. Pass the user query using the variable @the_message.
+```
+post("/process_single_message") do
+  """Respond to a message via ChatGPT
+  """
+  
+  #get user message
+  @the_message = params.fetch("the_message")
+
+  erb(:message_results)
+
+end
+```

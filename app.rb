@@ -112,6 +112,19 @@ get("/message") do
   erb(:message_form)
 end
 
+post("/process_single_message") do
+  """Respond to a message via ChatGPT
+  """
+
+  #get user message
+  @the_message = params.fetch("the_message")
+
+  #return "Thanks for your message: #{@the_message}"
+  #ENV.fetch("MY_GPT2_KEY")
+
+  erb(:message_results)
+end
+
 get("/chat") do
   erb(:chat_form)
 end
