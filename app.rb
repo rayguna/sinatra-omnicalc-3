@@ -46,7 +46,7 @@ post("/process_umbrella") do
 
   @current = weather_json["currently"]
 
-  @message = do_I_need_an_umbrella(weather_json)
+  @message = do_I_need_an_umbrella(weather_json) #parse json data using the function below
 
   erb(:umbrella_results)
 end
@@ -119,11 +119,39 @@ post("/process_single_message") do
   #get user message
   @the_message = params.fetch("the_message")
 
-  #return "Thanks for your message: #{@the_message}"
-  #ENV.fetch("MY_GPT2_KEY")
+  gpt_api_key = "MY_GPT2_KEY"  
+
+  #send query
+  request_headers_hash = {
+  "Authorization" => "Bearer #{ENV.fetch(gpt_api_key)}",
+  "content-type" => "application/json"
+  }
+
+  request_body_hash = {
+    "model" => "gpt-3.5-turbo",
+    "messages" => [
+      {
+        "role" => "user",
+        "content" => @the_message
+      }
+    ]
+  }
+
+  #load response as json
+  request_body_json = JSON.generate(request_body_hash)
+
+  raw_response = HTTP.headers(request_headers_hash).post(
+    "https://api.openai.com/v1/chat/completions",
+    :body => request_body_json
+  ).to_s
+
+  #parse response
+  @parsed_message = JSON.parse(raw_response)["choices"][0]["message"]["content"]
+
 
   erb(:message_results)
 end
+
 
 get("/chat") do
   erb(:chat_form)

@@ -218,7 +218,9 @@ end
 • Within the post block, change `HTTP.get(...).to_s` to `HTTP.post(...).to_s`.
 • Within the submission form page, change `<form action="/process_umbrella" method="get">` to `<form action="/process_umbrella" method="post">`. If the method parameter is not set, the default is set to "get".
 
-3. Work on message form.
+3. Work on a single AI message form which uses chatgpt API.
+
+○ You may set up the API key on this website: https://platform.openai.com/.
 
 ○ Create a file called view/message_form.erb to process user message. The contents is as follows:
 ```
@@ -237,16 +239,51 @@ end
 <a href="/message">Go back</a>
 ```
 
+○ Follow the instructions described here: https://learn.firstdraft.com/lessons/121 to set up GPT-API. 
+
 ○ Link message_form.erb to message_form.erb within app.rb as follows. Pass the user query using the variable @the_message.
 ```
 post("/process_single_message") do
   """Respond to a message via ChatGPT
   """
-  
+
   #get user message
   @the_message = params.fetch("the_message")
 
-  erb(:message_results)
+  gpt_api_key = "MY_GPT2_KEY"  
 
+  #send query
+  request_headers_hash = {
+  "Authorization" => "Bearer #{ENV.fetch(gpt_api_key)}",
+  "content-type" => "application/json"
+  }
+
+  request_body_hash = {
+    "model" => "gpt-3.5-turbo",
+    "messages" => [
+      {
+        "role" => "user",
+        "content" => @the_message
+      }
+    ]
+  }
+
+  #load response as json
+  request_body_json = JSON.generate(request_body_hash)
+
+  raw_response = HTTP.headers(request_headers_hash).post(
+    "https://api.openai.com/v1/chat/completions",
+    :body => request_body_json
+  ).to_s
+
+  #parse response
+  @parsed_message = JSON.parse(raw_response)["choices"][0]["message"]["content"]
+
+
+  erb(:message_results)
 end
 ```
+
+○ Issue:
+• At first, I got an error message saying: "You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-error".
+• I went into my account and added balance. I re-ran my query and continued to receive the error. After waiting for about 15 minutes, the api started working. 
