@@ -285,5 +285,7 @@ end
 ```
 
 ○ Issue:
+
 • At first, I got an error message saying: "You exceeded your current quota, please check your plan and billing details. For more information on this error, read the docs: https://platform.openai.com/docs/guides/error-codes/api-error".
 • I went into my account and added balance. I re-ran my query and continued to receive the error. After waiting for about 15 minutes, the api started working. 
+• Also, there was an occasion when the ChatGPT page loaded an empty page for approximately 30 minutes. After waiting for about 45 minutes, the page loaded normally. I dismissed it as the server being down.

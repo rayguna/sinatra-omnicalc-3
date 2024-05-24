@@ -157,6 +157,8 @@ get("/chat") do
   erb(:chat_form)
 end
 
+
+
 get ("/zebra") do
   #test cookies
   
