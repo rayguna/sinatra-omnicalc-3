@@ -291,3 +291,171 @@ end
 • I went into my account and added balance. I re-ran my query and continued to receive the error. After waiting for about 15 minutes, the api started working. 
 
 • Also, there was an occasion when the ChatGPT page loaded an empty page for approximately 30 minutes. After waiting for about 45 minutes, the page loaded normally. I dismissed it as the server being down.
+
+4. Work on AI Chat feature
+
+○ I decided to functionalize the code for the single AI message feature into the following:
+
+```
+post("/process_single_message") do
+  """Respond to a message via ChatGPT
+  """
+
+  #get user message
+  @the_message = params.fetch("the_message")
+
+  #query chatgpt via a function
+  @parsed_message = ask_chatgpt(@the_message)
+
+  erb(:message_results)
+end
+
+def ask_chatgpt(query)
+  """query chatgpt with a single message
+
+     Input: ask_chatgpt
+     Output: parsed string
+  """
+
+  gpt_api_key = "MY_GPT2_KEY"  
+
+  #send query
+  request_headers_hash = {
+  "Authorization" => "Bearer #{ENV.fetch(gpt_api_key)}",
+  "content-type" => "application/json"
+  }
+
+  request_body_hash = {
+    "model" => "gpt-3.5-turbo",
+    "messages" => [
+      {
+        "role" => "user",
+        "content" => query
+      }
+    ]
+  }
+
+  #load response as json
+  request_body_json = JSON.generate(request_body_hash)
+
+  raw_response = HTTP.headers(request_headers_hash).post(
+    "https://api.openai.com/v1/chat/completions",
+    :body => request_body_json
+  ).to_s
+
+
+  #parse response
+  parsed_message = JSON.parse(raw_response)["choices"][0]["message"]["content"]
+
+  return parsed_message
+end
+```
+
+○ Strategy: In order to keep appending the conversation into the page, you would want to accumulate the chat into an array.
+
+○ For this part of the project, I create a new function called chat_with_assistant to append conversation both for display and for chatgpt to carry on a continuous conversation, which is as follows.
+
+  ```
+  #global variable needed for the chat feature to retain the historical queries
+  strings=[]
+  conversation_history=[]
+
+  get("/chat") do
+
+    #erase history and start over
+    strings=[] #reset array
+    conversation_history=[] #reset history
+
+    erb(:chat_form)
+  end
+
+  post("/add_message_to_chat") do
+
+    #get user message
+    @user_message = params.fetch("user_message")
+
+    #query chatgpt via a function
+
+    @parsed_response = chat_with_assistant(@user_message, conversation_history)
+    #updateconversation history
+    conversation_history = @parsed_response[1] 
+
+    #join user message with chatgpt response and pass to @pass_strings variable
+    strings.append([@user_message, @parsed_response])
+    @pass_strings = strings
+
+    erb(:chat_results)
+
+  end
+
+  post("/clear_chat") do
+    strings=[] #reset array
+    conversation_history=[] #reset history
+
+    erb(:chat_form) #return to chat form 
+  end
+
+  def chat_with_assistant(query, conversation_history = [])
+
+    # Fetch the GPT API key from environment variables
+    gpt_api_key = "MY_GPT2_KEY"  
+
+    # Define request headers
+    request_headers_hash = {
+    "Authorization" => "Bearer #{ENV.fetch(gpt_api_key)}",
+    "content-type" => "application/json"
+    }
+
+    # Construct the request body with conversation history
+    request_body_hash = {
+      "model" => "gpt-3.5-turbo",
+      "messages" => conversation_history + [
+        {
+          "role" => "assistant",
+          "content" => query
+        }
+      ]
+    }
+
+    # Convert request body to JSON
+    request_body_json = JSON.generate(request_body_hash)
+
+    # Send POST request to OpenAI API
+    raw_response = HTTP.headers(request_headers_hash).post(
+      "https://api.openai.com/v1/chat/completions",
+      body: request_body_json
+    ).to_s
+
+    # Parse the response
+    parsed_response = JSON.parse(raw_response)
+
+    # Extract the response message
+    response_message = parsed_response["choices"][0]["message"]["content"]
+
+    # Update conversation history with the current message - required for chatgpt to carry on a conversation
+    updated_conversation_history = request_body_hash["messages"]
+    
+    [response_message, updated_conversation_history] #response_message
+  end
+  ```
+
+  It is possible to further refactor the code to combine the two functions (ask_chatgpt and chat_with_assistant), but I am leaving the code as it is for clarity.
+
+  ○ I tested the feature by asing a series of related questions, which is as follows:
+  
+  ```
+  user:
+  what is 2*9?
+  assistant:
+  2 * 9 = 18
+  user:
+  Minus 3?
+  assistant:
+  15
+  user:
+  Add 4.
+  assistant:
+  It is 19.
+  ```
+  
+  ~~~

@@ -119,6 +119,19 @@ post("/process_single_message") do
   #get user message
   @the_message = params.fetch("the_message")
 
+  #query chatgpt via a function
+  @parsed_message = ask_chatgpt(@the_message)
+
+  erb(:message_results)
+end
+
+def ask_chatgpt(query)
+  """query chatgpt with a single message
+
+     Input: ask_chatgpt
+     Output: parsed string
+  """
+
   gpt_api_key = "MY_GPT2_KEY"  
 
   #send query
@@ -132,7 +145,7 @@ post("/process_single_message") do
     "messages" => [
       {
         "role" => "user",
-        "content" => @the_message
+        "content" => query
       }
     ]
   }
@@ -145,19 +158,95 @@ post("/process_single_message") do
     :body => request_body_json
   ).to_s
 
+
   #parse response
-  @parsed_message = JSON.parse(raw_response)["choices"][0]["message"]["content"]
+  parsed_message = JSON.parse(raw_response)["choices"][0]["message"]["content"]
 
-
-  erb(:message_results)
+  return parsed_message
 end
 
+#----------Chat feature
+#global variable needed for the chat feature to retain the historical queries
+strings=[]
+conversation_history=[]
 
 get("/chat") do
+
+  #erase history and start over
+  strings=[] #reset array
+  conversation_history=[] #reset history
+
   erb(:chat_form)
 end
 
+post("/add_message_to_chat") do
 
+  #get user message
+  @user_message = params.fetch("user_message")
+
+  #query chatgpt via a function
+
+  @parsed_response = chat_with_assistant(@user_message, conversation_history)
+  #updateconversation history
+  conversation_history = @parsed_response[1] 
+
+  #join user message with chatgpt response and pass to @pass_strings variable
+  strings.append([@user_message, @parsed_response])
+  @pass_strings = strings
+
+  erb(:chat_results)
+
+end
+
+post("/clear_chat") do
+  strings=[] #reset array
+  conversation_history=[] #reset history
+
+  erb(:chat_form) #return to chat form 
+end
+
+def chat_with_assistant(query, conversation_history = [])
+
+  # Fetch the GPT API key from environment variables
+  gpt_api_key = "MY_GPT2_KEY"  
+
+  # Define request headers
+  request_headers_hash = {
+  "Authorization" => "Bearer #{ENV.fetch(gpt_api_key)}",
+  "content-type" => "application/json"
+  }
+
+  # Construct the request body with conversation history
+  request_body_hash = {
+    "model" => "gpt-3.5-turbo",
+    "messages" => conversation_history + [
+      {
+        "role" => "assistant",
+        "content" => query
+      }
+    ]
+  }
+
+  # Convert request body to JSON
+  request_body_json = JSON.generate(request_body_hash)
+
+  # Send POST request to OpenAI API
+  raw_response = HTTP.headers(request_headers_hash).post(
+    "https://api.openai.com/v1/chat/completions",
+    body: request_body_json
+  ).to_s
+
+  # Parse the response
+  parsed_response = JSON.parse(raw_response)
+
+  # Extract the response message
+  response_message = parsed_response["choices"][0]["message"]["content"]
+
+  # Update conversation history with the current message - required for chatgpt to carry on a conversation
+  updated_conversation_history = request_body_hash["messages"]
+  
+  [response_message, updated_conversation_history] #response_message
+end
 
 get ("/zebra") do
   #test cookies
